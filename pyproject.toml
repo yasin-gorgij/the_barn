@@ -1,0 +1,50 @@
+[project]
+name = "the-barn"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "reorder-python-imports>=3.15.0",
+    "ruff>=0.12.9",
+]
+
+[tool.ruff]
+target-version="py313"
+line-length = 120
+lint.select = [
+  "B",    # bugbear:    potential bugs
+  "DTZ",  # datetimez:  warn about missing timezones
+  "F",    # pyflakes:   potential errors
+  "FURB", # refurb:     refurbishing and modernizing Python codebases
+  "PERF", # perflint:   avoid performance anti-patterns
+  "PL",   # pylint:     the oldest static code analyser ( sometimes a bit pedantic)
+  "RUF",  # ruff:       rules introduced by ruff
+  "S",    # bandit:     security issues
+  "SIM",  # simplify:   helps you simplify your code
+  "UP",   # pyupgrade:  upgrade syntax or newer versions of the language
+]
+lint.ignore = ["RUF012", # Mutable class attributes should be annotated with typing.ClassVar
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.ruff.lint.per-file-ignores]
+# Some checks don't make sense in unit tests
+"tests/*.py" = [
+    "S101",    # Use of `assert` detected
+    "PLR0133", # Two constants compared in a comparison, consider replacing `1 == 1"
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["./tests"]
