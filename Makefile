@@ -6,6 +6,10 @@ install:
 collectstatic:
 	uv run manage.py collectstatic --noinput
 
+.PHONY: check
+check:
+	uv run manage.py check
+
 .PHONY: format
 format:
 	uv run reorder-python-imports --py313-plus
