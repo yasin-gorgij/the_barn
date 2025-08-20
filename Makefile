@@ -27,6 +27,10 @@ migrate: format
 migrations:
 	uv run manage.py makemigrations
 
+.PHONY: push
+push:
+	git push -u origin main
+
 .PHONY: run
 run:
 	uv run manage.py runserver
