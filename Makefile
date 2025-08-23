@@ -17,7 +17,7 @@ format:
 
 .PHONY: lint
 lint: format
-	uv run ruff check --fix --show-fixes
+	uv run ruff check --select I --fix --show-fixes
 
 .PHONY: migrate
 migrate: format
