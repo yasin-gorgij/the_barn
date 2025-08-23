@@ -10,8 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+
+# AWS S3 Settings
+AWS_S3_ENDPOINT_URL = os.getenv('THE_BARN_S3_ENDPOINT_URL')
+AWS_ACCESS_KEY_ID = os.getenv('THE_BARN_S3_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = os.getenv('THE_BARN_S3_SECRET_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('THE_BARN_S3_BUCKET_NAME')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,6 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'barn.apps.BarnConfig',
+    'storages',
+    'imagekit',
 ]
 
 MIDDLEWARE = [
