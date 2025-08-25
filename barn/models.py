@@ -1,14 +1,20 @@
 import hashlib
 
+from django.core.files.base import ContentFile
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 from imagekit.models import ImageSpecField
-from imagekit.processors import ResizeToFill
+from imagekit.processors import ResizeToFit
 from storages.backends.s3boto3 import S3Boto3Storage
 
 
 class Author(models.Model):
+    name = models.CharField(max_length=255, blank=False, unique=True)
+    slug = models.SlugField(blank=False, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.name
 
@@ -16,29 +22,14 @@ class Author(models.Model):
         if not self.slug:
             self.slug = slugify(str(self))
         super().save(*args, **kwargs)
-
-    name = models.CharField(max_length=255, blank=False, unique=True)
-    slug = models.SlugField(blank=False, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Category(models.Model):
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(str(self))
-        super().save(*args, **kwargs)
-
     name = models.CharField(max_length=255, blank=False, unique=True)
     slug = models.SlugField(blank=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-
-class Publisher(models.Model):
     def __str__(self):
         return self.name
 
@@ -47,13 +38,13 @@ class Publisher(models.Model):
             self.slug = slugify(str(self))
         super().save(*args, **kwargs)
 
+
+class Publisher(models.Model):
     name = models.CharField(max_length=100, blank=False, unique=True)
     slug = models.SlugField(blank=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-
-class Recommender(models.Model):
     def __str__(self):
         return self.name
 
@@ -62,13 +53,28 @@ class Recommender(models.Model):
             self.slug = slugify(str(self))
         super().save(*args, **kwargs)
 
+
+class Recommender(models.Model):
     name = models.CharField(max_length=255, blank=False, unique=True)
     slug = models.SlugField(blank=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(str(self))
+        super().save(*args, **kwargs)
 
 
 class Tag(models.Model):
+    name = models.CharField(max_length=255, blank=False, unique=True)
+    slug = models.SlugField(blank=False, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.name
 
@@ -76,11 +82,6 @@ class Tag(models.Model):
         if not self.slug:
             self.slug = slugify(str(self))
         super().save(*args, **kwargs)
-
-    name = models.CharField(max_length=255, blank=False, unique=True)
-    slug = models.SlugField(blank=False, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Book(models.Model):
@@ -102,22 +103,6 @@ class Book(models.Model):
             models.Index(fields=['i_wish_it']),
             models.Index(fields=['slug']),
         ]
-
-    def __str__(self):
-        name = [self.title]
-        if self.subtitle:
-            name.append(f'- {self.subtitle}')
-        if self.edition:
-            name.append(f'({self.edition} ed)')
-        if self.volume:
-            name.append(f'Vol. {self.volume}')
-
-        return ' '.join(name)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(str(self))
-        super().save(*args, **kwargs)
 
     title = models.CharField(max_length=255, blank=False)
     subtitle = models.CharField(max_length=255, blank=True)
@@ -144,9 +129,9 @@ class Book(models.Model):
     )
     cover_image_thumbnail = ImageSpecField(
         source='cover_image',
-        processors=[ResizeToFill(150, 242)],
+        processors=[ResizeToFit(180, 292, upscale=False)],
         format='WEBP',
-        options={'quality': 60},
+        options={'quality': 80},
     )
     has_physical_copy = models.BooleanField(default=False)
     is_beta = models.BooleanField(default=False, help_text='Is the book completed or not?')
@@ -161,36 +146,46 @@ class Book(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        name = [self.title]
+        if self.subtitle:
+            name.append(f'- {self.subtitle}')
+        if self.edition:
+            name.append(f'({self.edition} ed)')
+        if self.volume:
+            name.append(f'Vol. {self.volume}')
+
+        return ' '.join(name)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(str(self))
+        super().save(*args, **kwargs)
+
 
 class Asset(models.Model):
     class Meta:
         ordering = ['file_extension']
 
-    def save(self, *args, **kwargs):
-        self.file_extension = self.file.name.split('.')[-1].lower()
-        self.file_name = f'{str(self.book)}.{self.file_extension}'
-        self.file.seek(0, 2)
-        self.file_size = self.file.tell()
-        self.file.seek(0)
-        self.file_hash = hashlib.blake2b(self.file.read()).hexdigest()
-        self.file.seek(0)
-
-        super().save(*args, **kwargs)
-
-    book = models.ForeignKey(
-        Book,
-        related_name='assets',
-        on_delete=models.CASCADE,
-    )
+    book = models.ForeignKey(Book, related_name='assets', on_delete=models.CASCADE)
     file = models.FileField(storage=S3Boto3Storage(), upload_to='assets/')
-    file_name = models.CharField(blank=False)
+    file_name = models.CharField(max_length=255, blank=False)
     file_extension = models.CharField(max_length=10, blank=False)
     file_size = models.PositiveBigIntegerField(blank=False)
     file_hash = models.CharField(max_length=128, blank=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
 
 class ReadingList(models.Model):
+    name = models.CharField(max_length=255, blank=False, unique=True)
+    slug = models.SlugField(blank=False, unique=True)
+    books = models.ManyToManyField(Book, through='ReadingListBooks')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         return self.name
 
@@ -198,12 +193,6 @@ class ReadingList(models.Model):
         if not self.slug:
             self.slug = slugify(str(self))
         super().save(*args, **kwargs)
-
-    name = models.CharField(max_length=255, blank=False, unique=True)
-    slug = models.SlugField(blank=False, unique=True)
-    books = models.ManyToManyField(Book, through='ReadingListBooks')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
 
 class ReadingListBooks(models.Model):
