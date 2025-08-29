@@ -175,6 +175,9 @@ class Asset(models.Model):
     file_hash = models.CharField(max_length=128, blank=False, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return self.file_name
+
 
 class ReadingList(models.Model):
     name = models.CharField(max_length=255, blank=False, unique=True)
